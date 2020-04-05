@@ -22,6 +22,8 @@ mvn install
  - Play random song on the list
 
 **To Do:**
+ - Channel
+ - Queue
  - Loop
  - GUI
  
