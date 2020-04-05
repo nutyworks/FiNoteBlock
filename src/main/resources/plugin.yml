@@ -1,0 +1,12 @@
+name: FiNoteblock
+version: ${project.version}
+main: com.github.nutyworks.finoteblock.FiNoteBlockPlugin
+api-version: 1.13
+prefix: NB
+authors: [nutyworks]
+description: Play NBS file in minecraft
+website: https://github.com/nutyworks/FiNoteblock
+commands:
+  nb:
+    usage: /<command> <list|play|stop|pause|resume|settings> ...
+    aliases: [noteblock, song]
