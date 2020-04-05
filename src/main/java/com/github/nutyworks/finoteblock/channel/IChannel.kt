@@ -15,7 +15,7 @@ interface IChannel {
     val permanent: Boolean
 
     var playing: NoteBlockSong?
-    fun next(): FailMessage?
+    fun next(force: Boolean = false): FailMessage?
     fun pause(): FailMessage?
     fun resume(): FailMessage?
     fun stop(): FailMessage?

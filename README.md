@@ -17,13 +17,14 @@ mvn install
 ```
 
 ## Features
- - Panning support
+ - Channel system
+ - Customizable channel
+ - Add queue to a channel
+ - Panning(Stereo) support
  - Custom Instrument support
  - Play a random song on the list
 
 **To Do:**
- - Channel
- - Queue
  - Loop
  - GUI
  

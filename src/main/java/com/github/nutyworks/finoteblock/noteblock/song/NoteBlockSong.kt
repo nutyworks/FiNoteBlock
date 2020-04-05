@@ -9,12 +9,15 @@ import com.github.nutyworks.finoteblock.noteblock.Note
 import com.github.nutyworks.finoteblock.noteblock.instrument.CustomInstrument
 import com.github.nutyworks.finoteblock.util.*
 import com.google.common.io.LittleEndianDataInputStream
+import org.bukkit.Bukkit
 import org.bukkit.World
 import org.bukkit.entity.Player
 import org.bukkit.scheduler.BukkitTask
 import java.io.DataInputStream
+import java.io.EOFException
 import java.io.File
 import java.lang.IllegalStateException
+import kotlin.reflect.KClass
 
 class NoteBlockSong(val file: File) {
     var playId = "0"
@@ -75,15 +78,19 @@ class NoteBlockSong(val file: File) {
     }
 
     private fun parseNbs() {
-        if (debug) println("===== header =====")
-        parseHeader()
-        if (debug) println("===== noteblocks =====")
-        parseNoteBlocks()
-        if (debug) println("===== layer =====")
-        parseLayer()
-        if (debug) println("===== instruments =====")
-        parseCustomInstruments()
-        if (debug) println("===== end =====")
+        try {
+            if (debug) println("===== header =====")
+            parseHeader()
+            if (debug) println("===== noteblocks =====")
+            parseNoteBlocks()
+            if (debug) println("===== layer =====")
+            parseLayer()
+            if (debug) println("===== instruments =====")
+            parseCustomInstruments()
+            if (debug) println("===== end =====")
+        } catch (e: EOFException) {
+            Bukkit.getLogger().warning("Could not parse '${file.name}' to the end.")
+        }
     }
 
     private fun parseHeader() {

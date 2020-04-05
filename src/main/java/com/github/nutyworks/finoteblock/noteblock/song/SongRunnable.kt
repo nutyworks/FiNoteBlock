@@ -20,6 +20,10 @@ class SongRunnable(val song: NoteBlockSong) : BukkitRunnable() {
     private var forceEndTime = -1L
     private val bossBar = Bukkit.createBossBar("_", BarColor.GREEN, BarStyle.SEGMENTED_10)
 
+    init {
+        bossBar.progress = 0.0
+    }
+
     override fun run() {
         if (playing) {
             realTick += (song.tempo / 100.0) / 20

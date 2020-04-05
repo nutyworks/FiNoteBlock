@@ -15,8 +15,9 @@ class FiNoteBlockCommand(val plugin: FiNoteBlockPlugin) : ICommandExecutorComple
 
     companion object {
         val cmdMap = HashMap<String, ICommandExecutorCompleter>().apply {
-            put("list", List())
             put("add", Add())
+            put("list", List())
+            put("next", Next())
             put("stop", Stop())
             put("pause", Pause())
             put("resume", Resume())
@@ -153,6 +154,25 @@ class FiNoteBlockCommand(val plugin: FiNoteBlockPlugin) : ICommandExecutorComple
 
             return mutableListOf()
         }
+    }
+
+    class Next : ICommandExecutorCompleter {
+        override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
+            if (sender !is Player) {
+                sender.sendMessage("no console")
+                return true
+            }
+
+            FiNoteBlockPlugin.instance.playerManager.playerChannel[sender.uniqueId]!!.next()?.sendMessage("§c%s", sender)
+                    ?: sender.sendMessage("§6Playing the next song.")
+
+            return true
+        }
+
+        override fun onTabComplete(sender: CommandSender, command: Command, alias: String, args: Array<out String>): MutableList<String> {
+            return mutableListOf()
+        }
+
     }
 
     class Stop : ICommandExecutorCompleter {

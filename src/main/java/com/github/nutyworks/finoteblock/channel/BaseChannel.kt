@@ -15,16 +15,24 @@ abstract class BaseChannel : IChannel {
     override val permanent: Boolean = false
     override var playing: NoteBlockSong? = null
 
-    override fun next(): FailMessage? {
-        playing?.stop()
+    override fun next(force: Boolean /* = false */): FailMessage? {
 
-        if (queue.elements().hasMoreElements()) {
+        if (force) {
+            playing?.stop()
             playing = queue.dequeue()
 
-            playing?.load() ?: return FailMessage("Failed to load the song ${playing?.playId ?: "(unknown)"}")
-            playing?.play() ?: return FailMessage("Failed to play the song ${playing?.playId ?: "(unknown)"}")
+            playing?.load()
+            playing?.play()
         } else {
-            playing = null
+            if (queue.elements().hasMoreElements()) {
+                playing?.stop()
+                playing = queue.dequeue()
+
+                playing?.load()
+                playing?.play()
+            } else {
+                return FailMessage("There is no queued song to play.")
+            }
         }
 
         return null
