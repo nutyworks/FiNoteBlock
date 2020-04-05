@@ -7,7 +7,7 @@ class NoteBlockSongManager() {
     private var maxId = 0
 
     fun register(song: NoteBlockSong): String {
-        val key = song.hashCode().toString(16).substring(0, 6)
+        val key = song.hashCode().toString(36)
         playing[key] = song
 
         return key

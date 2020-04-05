@@ -3,20 +3,24 @@
 package com.github.nutyworks.finoteblock.noteblock.song
 
 import com.github.nutyworks.finoteblock.FiNoteBlockPlugin
+import com.github.nutyworks.finoteblock.channel.IChannel
 import com.github.nutyworks.finoteblock.noteblock.Layer
 import com.github.nutyworks.finoteblock.noteblock.Note
 import com.github.nutyworks.finoteblock.noteblock.instrument.CustomInstrument
+import com.github.nutyworks.finoteblock.util.*
 import com.google.common.io.LittleEndianDataInputStream
 import org.bukkit.World
 import org.bukkit.entity.Player
 import org.bukkit.scheduler.BukkitTask
 import java.io.DataInputStream
 import java.io.File
+import java.lang.IllegalStateException
 
 class NoteBlockSong(val file: File) {
-    var playId = "000000"
+    var playId = "0"
     private var isLegacy: Boolean = false
-    private var dis: LittleEndianDataInputStream
+    private lateinit var dis: LittleEndianDataInputStream
+    var loaded: Boolean = false
     var songLength: Short = 0
     var layer: Short = 0
     var name: String = ""
@@ -28,10 +32,10 @@ class NoteBlockSong(val file: File) {
     val notes = HashMap<Short, List<Note>>()
     val layers = HashMap<Short, Layer>()
     val runnable = SongRunnable(this)
+    lateinit var channel: IChannel
     lateinit var task: BukkitTask
 
     private val debug = false
-
 
     init {
         if (!file.path.endsWith(".nbs"))
@@ -43,12 +47,31 @@ class NoteBlockSong(val file: File) {
         isLegacy = temp.readShort() != 0.toShort()
         temp.close()
 
-//        println(isLegacy)
+        playId = hashCode().toString(36)
+        loadName()
 
+//        println(isLegacy)
+    }
+
+    private fun loadName() {
+        val tempDis = LittleEndianDataInputStream(file.inputStream())
+        if (!isLegacy) {
+            tempDis.skipBytes(4)
+        }
+        tempDis.skipBytes(4)
+        // song name
+        name = tempDis.readString()
+        if (name == "")
+            name = file.name.replace(".nbs", "")
+    }
+
+    fun load() {
         dis = LittleEndianDataInputStream(file.inputStream())
         parseNbs()
         if (debug) println("available ${dis.available()}")
         dis.close()
+
+        loaded = true
     }
 
     private fun parseNbs() {
@@ -253,26 +276,21 @@ class NoteBlockSong(val file: File) {
         if (debug) println("custom-instruments $customInstruments")
     }
 
-    fun play(recipient: Recipient, player: Player? = null, world: World? = null) {
-        runnable.recipient = recipient
-        runnable.player = player
-        runnable.world = world
+    fun play(): FailMessage? {
+        if (!loaded) return FailMessage("Song $playId is not loaded, but tried to play.")
 
-        when (recipient) {
-            Recipient.WORLD -> if (world == null) throw IllegalArgumentException("World must be specified.")
-            Recipient.PLAYER -> if (player == null) throw java.lang.IllegalArgumentException("Player must be specified.")
-        }
-
-        playId = FiNoteBlockPlugin.nbManager.register(this)
+        channel.nbsManager.register(this)
         task = runnable.runTaskTimer(FiNoteBlockPlugin.instance, 0, 1)
         runnable.playing = true
 //        println(notes)
+
+        return null
     }
 
     fun stop() {
         task.cancel()
         runnable.playing = false
-        FiNoteBlockPlugin.nbManager.unregister(playId)
+        channel.nbsManager.unregister(playId)
         runnable.removeBossBar()
     }
 
@@ -284,14 +302,4 @@ class NoteBlockSong(val file: File) {
     fun resume() {
         runnable.playing = true
     }
-}
-
-private fun LittleEndianDataInputStream.readString(): String {
-    val length = readInt()
-
-    var str = ""
-    for (i in 0 until length)
-        str += readByte().toChar()
-
-    return str
 }

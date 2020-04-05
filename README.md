@@ -19,7 +19,7 @@ mvn install
 ## Features
  - Panning support
  - Custom Instrument support
- - Play random song on the list
+ - Play a random song on the list
 
 **To Do:**
  - Channel

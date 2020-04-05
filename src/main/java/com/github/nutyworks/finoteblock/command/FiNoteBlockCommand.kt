@@ -7,17 +7,16 @@ import com.github.nutyworks.finoteblock.noteblock.song.NoteBlockSong
 import com.github.nutyworks.finoteblock.noteblock.song.Recipient
 import org.bukkit.ChatColor
 import org.bukkit.command.Command
-import org.bukkit.command.CommandExecutor
 import org.bukkit.command.CommandSender
 import org.bukkit.entity.Player
 import java.io.File
 
-class FiNoteBlockCommand : ICommandExecutorCompleter {
+class FiNoteBlockCommand(val plugin: FiNoteBlockPlugin) : ICommandExecutorCompleter {
 
     companion object {
         val cmdMap = HashMap<String, ICommandExecutorCompleter>().apply {
             put("list", List())
-            put("play", Play())
+            put("add", Add())
             put("stop", Stop())
             put("pause", Pause())
             put("resume", Resume())
@@ -55,8 +54,17 @@ class FiNoteBlockCommand : ICommandExecutorCompleter {
                 }
             } else
                 if (args[1] == "playing") {
-                    sender.sendMessage("============= List [Playing] =============")
-                    FiNoteBlockPlugin.nbManager.playing.forEach { (t, u) -> sender.sendMessage("$t. ${u.name}") }
+                    if (sender !is Player) {
+                        sender.sendMessage("no console")
+                        return true
+                    }
+                    val channel = FiNoteBlockPlugin.instance.playerManager.playerChannel[sender.uniqueId]!!
+
+                    sender.sendMessage("Now playing in ${channel.name}: \n §a${channel.playing?.name ?: "None"}")
+                    sender.sendMessage("Queued in ${channel.name}: ")
+                    channel.queue.elements().toList().forEachIndexed { index, song ->
+                        sender.sendMessage("§6$index. §a${song.name} §7(${song.playId})")
+                    }
                 } else if (args[1].matches(Regex("^\\d+$"))) {
                     playableList(sender, args[1].toInt())
                 } else {
@@ -71,12 +79,12 @@ class FiNoteBlockCommand : ICommandExecutorCompleter {
 
             if (page == 0) return sender.sendMessage("${ChatColor.RED}No page.")
 
-            var realPage = page - 1
+            val realPage = page - 1
 
             if (files != null) {
                 if (realPage > files.size / 10) sender.sendMessage("${ChatColor.RED}No page.")
                 sender.sendMessage("----- NBS song (Page: ${realPage + 1}/${files.size / 10 + 1}) -----")
-                for (i in realPage*10..realPage*10+9) {
+                for (i in realPage * 10..realPage * 10 + 9) {
                     if (files.size <= i)
                         break
                     sender.sendMessage("${ChatColor.GOLD}$i. " +
@@ -96,7 +104,7 @@ class FiNoteBlockCommand : ICommandExecutorCompleter {
         }
     }
 
-    class Play : ICommandExecutorCompleter {
+    class Add : ICommandExecutorCompleter {
         override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
             if (sender !is Player) {
                 sender.sendMessage("Only for players.")
@@ -109,10 +117,10 @@ class FiNoteBlockCommand : ICommandExecutorCompleter {
                 file = File("${FiNoteBlockPlugin.instance.dataFolder}\\nbs\\${FileManager.nbsFiles?.get(args[2].toInt())}.nbs")
             } else if (args[1] == "name") {
                 file = File("${FiNoteBlockPlugin.instance.dataFolder}\\nbs\\${args[2]}.nbs")
-            } else if (args[1] == "random"){
+            } else if (args[1] == "random") {
                 file = File("${FiNoteBlockPlugin.instance.dataFolder}\\nbs\\${FileManager.nbsFiles?.random()}.nbs")
             } else {
-                sender.sendMessage("/nb play <id|name|random>")
+                sender.sendMessage("/nb add <id|name|random>")
                 return true
             }
 
@@ -122,8 +130,9 @@ class FiNoteBlockCommand : ICommandExecutorCompleter {
             }
 
             val song = NoteBlockSong(file)
-            song.play(UserSettings.getRecipient(sender.uniqueId), player = sender, world = sender.world)
-            sender.sendMessage("§6Playing §a${song.name}§6. Play ID is ${song.playId}.")
+            val channel = FiNoteBlockPlugin.instance.playerManager.playerChannel[sender.uniqueId]!!
+            channel.add(song)
+            sender.sendMessage("§6Queued §a${song.name}§6 in ${channel.name}. Play ID is ${song.playId}.")
             return true
         }
 
@@ -140,38 +149,6 @@ class FiNoteBlockCommand : ICommandExecutorCompleter {
                 return FileManager.nbsFiles?.toSet()
                         ?.filter { !it.contains(Regex("\\s")) && it.startsWith(args[2]) }
                         ?.toMutableList() ?: mutableListOf()
-                /* return FileManager.nbsFiles?.toSet()
-                        ?.filter {
-                            val sp = it.split("\\s")
-                            for (i in args.indices - 2) {
-                                if (sp[i].startsWith(args[i + 2]))
-                                    return@filter true
-                                else if (sp[i] == args[i + 2])
-                                    continue
-                                else
-                                    return@filter false
-                            }
-                            return@filter true
-                        }
-                        ?.map { targetString ->
-
-                            val sp = targetString.split("\\s")
-                            for (i in args.indices - 2) {
-                                if (sp[i].startsWith(args[i + 2])) {
-                                    val remaining = ""
-
-                                    return@map remaining
-                                } else if (sp[i] == args[i + 2])
-                                    continue
-                                else {
-                                    return@map "false"
-                                }
-                            }
-
-                            return@map targetString + "_returned"
-                        }
-                        ?.toMutableList() ?: mutableListOf()
-              */
             }
 
             return mutableListOf()
@@ -179,81 +156,60 @@ class FiNoteBlockCommand : ICommandExecutorCompleter {
     }
 
     class Stop : ICommandExecutorCompleter {
-        override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
-            if (args.size == 1) {
-                sender.sendMessage("/nb stop <playId>")
+        override fun onCommand(sender: CommandSender,
+                               command: Command, label: String, args: Array<out String>): Boolean {
+            if (sender !is Player) {
+                sender.sendMessage("no console")
                 return true
             }
-            val song = FiNoteBlockPlugin.nbManager.playing[args[1]]
-            if (song == null) {
-                sender.sendMessage("§cCannot stop ${args[1]}; invalid play id.")
-                return true
-            }else {
-                song.stop()
-                sender.sendMessage("§6Stopped §a${song.name}§6.")
-            }
+
+            FiNoteBlockPlugin.instance.playerManager.playerChannel[sender.uniqueId]!!.stop()?.sendMessage("§c%s", sender)
+                    ?: sender.sendMessage("§6Stopped playing song and removed all queued song.")
+
             return true
         }
 
         override fun onTabComplete(sender: CommandSender, command: Command, alias: String, args: Array<out String>): MutableList<String> {
-            return FiNoteBlockPlugin.nbManager.playing.keys
-                    .filter { i -> i.startsWith(args[1]) }
-                    .toMutableList()
+            return mutableListOf()
         }
     }
 
     class Pause : ICommandExecutorCompleter {
         override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
-            if (args.size == 1) {
-                sender.sendMessage("/nb pause <playId>")
+            if (sender !is Player) {
+                sender.sendMessage("no console")
                 return true
             }
 
-            val song = FiNoteBlockPlugin.nbManager.playing[args[1]]
-            if (song == null) {
-                sender.sendMessage("§cCannot pause ${args[1]}; invalid play id.")
-                return true
-            } else if (!song.runnable.playing) {
-                sender.sendMessage("§cCannot pause ${args[1]}; song is already paused.")
-            } else {
-                song.pause()
-                sender.sendMessage("§6Paused §a${song.name}§6. §f/noteblock resume ${song.playId} §6to resume.")
-            }
+            FiNoteBlockPlugin.instance.playerManager.playerChannel[sender.uniqueId]!!.pause()?.sendMessage("§c%s", sender)
+                    ?: sender.sendMessage("§6Song paused. §f/nb resume §6to resume.")
+
             return true
         }
 
         override fun onTabComplete(sender: CommandSender, command: Command, alias: String, args: Array<out String>): MutableList<String> {
-            return FiNoteBlockPlugin.nbManager.playing.keys
-                    .filter { i -> i.startsWith(args[1]) && FiNoteBlockPlugin.nbManager.getSong(i)?.runnable?.playing!! }
-                    .toMutableList()
+            return mutableListOf()
         }
     }
 
     class Resume : ICommandExecutorCompleter {
         override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
-            if (args.size == 1) {
-                sender.sendMessage("/nb resume <playId>")
+            if (sender !is Player) {
+                sender.sendMessage("no console")
                 return true
             }
-            val song = FiNoteBlockPlugin.nbManager.playing[args[1]]
-            if (song == null) {
-                sender.sendMessage("§cCannot resume ${args[1]}; invalid play id.")
-                return true
-            } else if (song.runnable.playing) {
-                sender.sendMessage("§cCannot resume ${args[1]}; song is not paused.")
-            } else {
-                song.resume()
-                sender.sendMessage("§6Resumed §a${song.name}§6. Play ID is ${song.playId}.")
-            }
+
+            FiNoteBlockPlugin.instance.playerManager.playerChannel[sender.uniqueId]!!.resume()?.sendMessage("§c%s", sender)
+                    ?: sender.sendMessage("§6Song resumed. §f/nb pause §6to pause.")
+
             return true
         }
 
         override fun onTabComplete(sender: CommandSender, command: Command, alias: String, args: Array<out String>): MutableList<String> {
-            return FiNoteBlockPlugin.nbManager.playing.keys
-                    .filter { i -> i.startsWith(args[1]) && !FiNoteBlockPlugin.nbManager.getSong(i)?.runnable?.playing!! }
-                    .toMutableList()
+            return mutableListOf()
         }
     }
+
     class Settings : ICommandExecutorCompleter {
         override fun onCommand(sender: CommandSender, command: Command, label: String, args: Array<out String>): Boolean {
             if (sender !is Player) {
@@ -266,30 +222,30 @@ class FiNoteBlockCommand : ICommandExecutorCompleter {
                 return true
             }
             when (args[1]) {
-                 "recipient" -> {
-                     if (args.size == 2) {
-                         sender.sendMessage("Settings > recipient := " +
-                                 UserSettings.getRecipient(sender.uniqueId).toString().toLowerCase())
-                         return true
-                     }
-                     when (args[2]) {
-                         "everyone" -> {
-                             UserSettings.setRecipient(sender.uniqueId, Recipient.EVERYONE)
-                             sender.sendMessage("Settings > recipient = everyone")
-                         }
-                         "me" -> {
-                             UserSettings.setRecipient(sender.uniqueId, Recipient.PLAYER)
-                             sender.sendMessage("Settings > recipient = player")
-                         }
-                         "world" -> {
-                             UserSettings.setRecipient(sender.uniqueId, Recipient.WORLD)
-                             sender.sendMessage("Settings > recipient = world")
-                         }
-                         else -> sender.sendMessage("/nb settings recipient [everyone|player|world]")
-                     }
-                 }
-                 else -> sender.sendMessage("Setting ${args[1]} not exists.")
-             }
+                "recipient" -> {
+                    if (args.size == 2) {
+                        sender.sendMessage("Settings > recipient := " +
+                                UserSettings.getRecipient(sender.uniqueId).toString().toLowerCase())
+                        return true
+                    }
+                    when (args[2]) {
+                        "everyone" -> {
+                            UserSettings.setRecipient(sender.uniqueId, Recipient.EVERYONE)
+                            sender.sendMessage("Settings > recipient = everyone")
+                        }
+                        "me" -> {
+                            UserSettings.setRecipient(sender.uniqueId, Recipient.PLAYER)
+                            sender.sendMessage("Settings > recipient = player")
+                        }
+                        "world" -> {
+                            UserSettings.setRecipient(sender.uniqueId, Recipient.WORLD)
+                            sender.sendMessage("Settings > recipient = world")
+                        }
+                        else -> sender.sendMessage("/nb settings recipient [everyone|player|world]")
+                    }
+                }
+                else -> sender.sendMessage("Setting ${args[1]} not exists.")
+            }
 
             return true
         }
