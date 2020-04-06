@@ -17,8 +17,10 @@ class PlayerManager : Listener {
     @EventHandler
     private fun onPlayerJoin(event: PlayerJoinEvent) {
         val uuid = event.player.uniqueId
+
         playerChannel[uuid] ?: moveChannel(uuid, "default", true)
-        FiNoteBlockPlugin.instance.playerManager.playerSetting[uuid] = UserSettings(uuid)
+        if (playerSetting[uuid] == null)
+            FiNoteBlockPlugin.instance.playerManager.playerSetting[uuid] = UserSettings(uuid)
     }
 
     fun moveChannel(uuid: UUID, channel: String, force: Boolean = false) {

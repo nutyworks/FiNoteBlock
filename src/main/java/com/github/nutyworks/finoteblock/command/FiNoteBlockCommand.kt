@@ -110,7 +110,9 @@ class FiNoteBlockCommand(val plugin: FiNoteBlockPlugin) : AbstractExecutorComple
         }
 
         override fun tabComplete(): MutableList<String> {
-            return setOf("playing", "playable").filter { it.startsWith(args[1]) }.toMutableList()
+            return if (args.size == 2) {
+                setOf("playing", "playable").filter { it.startsWith(args[1]) }.toMutableList()
+            } else mutableListOf()
         }
     }
 
