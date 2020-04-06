@@ -2,6 +2,8 @@ package com.github.nutyworks.finoteblock.noteblock.file
 
 import com.github.nutyworks.finoteblock.FiNoteBlockPlugin
 import com.github.nutyworks.finoteblock.command.CommandFailException
+import com.github.nutyworks.finoteblock.util.HashBijective
+import com.github.nutyworks.finoteblock.util.hashBijectiveOf
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.File
@@ -18,8 +20,14 @@ class UserSettings(val uuid: UUID) {
     companion object {
         val default = HashMap<String, SettingOption>().apply {
             //
-            put("displayBossBar", SettingOption(2, true, listOf(true, false)))
-            put("bossBarPercentage", SettingOption(3, true, listOf(true, false)))
+            put("displayBossBar", SettingOption(2, true, hashBijectiveOf<Any, Any>().apply {
+                set(true, secondary = true)
+                set(false, secondary = false)
+            }))
+            put("bossBarProgress", SettingOption(3, "percentage", hashBijectiveOf<Any, Any>().apply {
+                set("percentage", true)
+                set("time", false)
+            }))
         }
     }
 
@@ -32,11 +40,15 @@ class UserSettings(val uuid: UUID) {
 
     fun create() {
         file.createNewFile()
+        save()
+        load()
     }
 
     fun load() {
         val fis = file.inputStream()
         val dis = DataInputStream(fis)
+
+
 
         dis.close()
         fis.close()
@@ -82,9 +94,9 @@ class UserSettings(val uuid: UUID) {
 //        println(convertedValue)
 //        println(convertedValue.javaClass.typeName)
 
-        if (default[key]?.acceptableValues?.contains(convertedValue) == true)
+        if (default[key]?.acceptableValues?.primaryToSecondary?.keys?.contains(convertedValue) == true)
             settings[key] = convertedValue
     }
 }
 
-class SettingOption(val offset: Int, val defaultValue: Any, val acceptableValues: List<Any>)
+class SettingOption(val offset: Int, val defaultValue: Any, val acceptableValues: HashBijective<Any, Any>)

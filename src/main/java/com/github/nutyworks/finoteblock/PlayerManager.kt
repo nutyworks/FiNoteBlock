@@ -17,13 +17,15 @@ class PlayerManager : Listener {
     @EventHandler
     private fun onPlayerJoin(event: PlayerJoinEvent) {
         val uuid = event.player.uniqueId
-        moveChannel(uuid, "default")
+        moveChannel(uuid, "default", true)
         FiNoteBlockPlugin.instance.playerManager.playerSetting[uuid] = UserSettings(uuid)
     }
 
-    fun moveChannel(uuid: UUID, channel: String) {
+    fun moveChannel(uuid: UUID, channel: String, force: Boolean = false) {
         val currentChannel = playerChannel[uuid]
-        if (currentChannel?.name == channel) throw CommandFailException("Already in $channel channel.")
+        if (force)
+            if (currentChannel?.name == channel) throw CommandFailException("Already in $channel channel.")
+
 
         val changeChannel = FiNoteBlockPlugin.instance.channelManager.channels[channel]
                 ?: throw CommandFailException("Could not find channel $channel")
@@ -31,7 +33,5 @@ class PlayerManager : Listener {
         currentChannel?.recipient?.remove(uuid)
         changeChannel.recipient.add(uuid)
         playerChannel[uuid] = changeChannel
-
-        Bukkit.getPlayer(uuid)?.sendMessage("§6You are moved to $channel channel.")
     }
 }

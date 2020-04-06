@@ -249,7 +249,7 @@ class FiNoteBlockCommand(val plugin: FiNoteBlockPlugin) : AbstractExecutorComple
         override fun tabComplete(): MutableList<String> {
             return when (args.size) {
                 2 -> UserSettings.default.keys.filter { s -> s.startsWith(args[1]) }.toMutableList()
-                3 -> UserSettings.default[args[1]]?.acceptableValues?.map { e -> e.toString()}
+                3 -> UserSettings.default[args[1]]?.acceptableValues?.primaryToSecondary?.keys?.map { e -> e.toString() }
                         ?.filter {s -> s.startsWith(args[2])}?.toMutableList() ?: mutableListOf()
                 else -> mutableListOf()
             }
