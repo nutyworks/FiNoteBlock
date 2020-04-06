@@ -10,6 +10,8 @@ Using file format of [Minecraft Note Block Studio](https://www.stuffbydavid.com/
 - [Using](#using)
 
 ## Installation
+You can download the plugin [here](https://github.com/nutyworks/FiNoteBlock/releases), or build it by using 
+[Git](https://git-scm.com/) and [Maven](https://maven.apache.org/). 
 ```
 git clone https://github.com/nutyworks/FiNoteBlock
 cd FiNoteBlock

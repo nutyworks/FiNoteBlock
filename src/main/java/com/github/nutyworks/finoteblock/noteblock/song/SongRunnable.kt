@@ -28,7 +28,7 @@ class SongRunnable(val song: NoteBlockSong) : BukkitRunnable() {
         if (playing) {
             realTick += (song.tempo / 100.0) / 20
             if (lastTick > song.songLength + 1) {
-                song.channel.next()
+                song.channel.next(true)
             }
 
             if (realTick.roundToInt() > lastTick) {
@@ -45,7 +45,7 @@ class SongRunnable(val song: NoteBlockSong) : BukkitRunnable() {
             updateBossBar()
         } else {
             if (forceEndTime < System.currentTimeMillis()) {
-                song.channel.next()
+                song.channel.next(true)
             }
         }
     }
@@ -72,7 +72,9 @@ class SongRunnable(val song: NoteBlockSong) : BukkitRunnable() {
 
     private fun updateBossBar() {
         Bukkit.getOnlinePlayers().forEach {
-            if (song.channel.recipient.contains(it.uniqueId))
+            val isListeningToChannel = song.channel.recipient.contains(it.uniqueId)
+            val displayBossBar = FiNoteBlockPlugin.instance.playerManager.playerSetting[it.uniqueId]?.get("displayBossBar") == true
+            if (isListeningToChannel && displayBossBar)
                 bossBar.addPlayer(it)
             else
                 bossBar.removePlayer(it)

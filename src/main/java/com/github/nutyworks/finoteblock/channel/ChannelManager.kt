@@ -1,6 +1,6 @@
 package com.github.nutyworks.finoteblock.channel
 
-import com.github.nutyworks.finoteblock.util.FailMessage
+import com.github.nutyworks.finoteblock.command.CommandFailException
 
 class ChannelManager {
     val channels = HashMap<String, IChannel>()
@@ -9,18 +9,14 @@ class ChannelManager {
         channels["default"] = DefaultChannel("default")
     }
 
-    fun addChannel(name: String, type: ChannelType, permanent: Boolean = false): FailMessage? {
-        if (channels.containsKey(name)) return FailMessage("The channel name $name is taken.")
+    fun addChannel(name: String, type: ChannelType, permanent: Boolean = false) {
+        if (channels.containsKey(name)) throw CommandFailException("The channel name $name is taken.")
         channels[name] = CustomChannel(name, type, permanent)
-
-        return null
     }
 
-    fun removeChannel(name: String): FailMessage? {
-        val channel = channels[name] ?: return FailMessage("Could not find a channel $name.")
+    fun removeChannel(name: String) {
+        val channel = channels[name] ?: throw CommandFailException("Could not find a channel $name.")
 
-        if (channel is DefaultChannel) return FailMessage("Cannot delete the default channel.")
-
-        return null
+        if (channel is DefaultChannel) throw CommandFailException("Cannot delete the default channel.")
     }
 }

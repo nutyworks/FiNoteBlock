@@ -2,7 +2,6 @@ package com.github.nutyworks.finoteblock.channel
 
 import com.github.nutyworks.finoteblock.noteblock.NoteBlockSongManager
 import com.github.nutyworks.finoteblock.noteblock.song.NoteBlockSong
-import com.github.nutyworks.finoteblock.util.FailMessage
 import sun.misc.Queue
 import java.util.*
 
@@ -15,10 +14,10 @@ interface IChannel {
     val permanent: Boolean
 
     var playing: NoteBlockSong?
-    fun next(force: Boolean = false): FailMessage?
-    fun pause(): FailMessage?
-    fun resume(): FailMessage?
-    fun stop(): FailMessage?
+    fun next(force: Boolean = false)
+    fun pause()
+    fun resume()
+    fun stop()
 
     fun add(song: NoteBlockSong)
 }

@@ -4,6 +4,7 @@ package com.github.nutyworks.finoteblock.noteblock.song
 
 import com.github.nutyworks.finoteblock.FiNoteBlockPlugin
 import com.github.nutyworks.finoteblock.channel.IChannel
+import com.github.nutyworks.finoteblock.command.CommandFailException
 import com.github.nutyworks.finoteblock.noteblock.Layer
 import com.github.nutyworks.finoteblock.noteblock.Note
 import com.github.nutyworks.finoteblock.noteblock.instrument.CustomInstrument
@@ -283,15 +284,13 @@ class NoteBlockSong(val file: File) {
         if (debug) println("custom-instruments $customInstruments")
     }
 
-    fun play(): FailMessage? {
-        if (!loaded) return FailMessage("Song $playId is not loaded, but tried to play.")
+    fun play() {
+        if (!loaded) throw CommandFailException("Song $playId is not loaded, but tried to play.")
 
         channel.nbsManager.register(this)
         task = runnable.runTaskTimer(FiNoteBlockPlugin.instance, 0, 1)
         runnable.playing = true
 //        println(notes)
-
-        return null
     }
 
     fun stop() {

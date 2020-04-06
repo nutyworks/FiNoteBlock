@@ -1,73 +1,90 @@
 package com.github.nutyworks.finoteblock.noteblock.file
 
 import com.github.nutyworks.finoteblock.FiNoteBlockPlugin
-import com.github.nutyworks.finoteblock.noteblock.song.Recipient
+import com.github.nutyworks.finoteblock.command.CommandFailException
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.File
+import java.lang.IllegalArgumentException
 import java.util.*
 
-object UserSettings {
+class UserSettings(val uuid: UUID) {
     /**
      * 1. Byte: Recipient
      * 2. Boolean: BossBar
      */
 
-    fun getRecipient(uuid: UUID): Recipient {
-        val file = File("${FiNoteBlockPlugin.instance.dataFolder}\\userdata\\$uuid.dat")
-        if (!file.exists()) file.createNewFile()
-        val dis = DataInputStream(file.inputStream())
-
-        if (dis.available() > 0) {
-            val v = dis.readByte()
-            dis.close()
-            return when (v) {
-                0.toByte() -> Recipient.EVERYONE
-                1.toByte() -> Recipient.WORLD
-                2.toByte() -> Recipient.PLAYER
-                else -> Recipient.PLAYER
-            }
+    // (key, (offset, value))
+    companion object {
+        val default = HashMap<String, SettingOption>().apply {
+            //
+            put("displayBossBar", SettingOption(2, true, listOf(true, false)))
+            put("bossBarPercentage", SettingOption(3, true, listOf(true, false)))
         }
-
-        return Recipient.PLAYER
     }
 
-    fun setRecipient(uuid: UUID, value: Recipient) {
-        val file = File("${FiNoteBlockPlugin.instance.dataFolder}\\userdata\\$uuid.dat")
-        if (!file.exists()) file.createNewFile()
-        val dos = DataOutputStream(file.outputStream())
+    private val settings = HashMap<String, Any>()
+    private val file = File("${FiNoteBlockPlugin.instance.dataFolder}\\userdata\\$uuid.dat")
 
-        dos.writeByte(value.ordinal)
+    init {
+        if (!file.exists()) create()
+    }
+
+    fun create() {
+        file.createNewFile()
+    }
+
+    fun load() {
+        val fis = file.inputStream()
+        val dis = DataInputStream(fis)
+
+        dis.close()
+        fis.close()
+        TODO()
+    }
+
+    fun save() {
+        val file = File("${FiNoteBlockPlugin.instance.dataFolder}\\userdata\\$uuid.dat")
+        val fis = file.outputStream()
+        val dos = DataOutputStream(fis)
 
         dos.close()
+        fis.close()
+        TODO()
     }
 
-    fun getBossBarVisible(uuid: UUID): Recipient {
-        val file = File("${FiNoteBlockPlugin.instance.dataFolder}\\userdata\\$uuid.dat")
-        if (!file.exists()) file.createNewFile()
-        val dis = DataInputStream(file.inputStream())
+    fun get(key: String): Any? {
+        if (!default.containsKey(key)) throw CommandFailException("Settings $key not exists.")
+        return settings[key]
+    }
 
-        if (dis.available() > 0) {
-            val v = dis.readByte()
-            dis.close()
-            return when (v) {
-                0.toByte() -> Recipient.EVERYONE
-                1.toByte() -> Recipient.WORLD
-                2.toByte() -> Recipient.PLAYER
-                else -> Recipient.PLAYER
+    fun set(key: String, value: Any) {
+
+//        println("set() call")
+
+        if (!default.containsKey(key)) throw CommandFailException("Settings $key not exists.")
+
+        val convertedValue = when (default[key]?.defaultValue?.javaClass?.typeName) {
+            "java.lang.Boolean" -> when(value.toString().toLowerCase()) {
+                "true" -> true
+                "false" -> false
+                else -> throw CommandFailException("Invalid value.")
             }
+            "java.lang.Byte" -> value.toString().toByte()
+            "java.lang.Short" -> value.toString().toShort()
+            "java.lang.Integer" -> value.toString().toInt()
+            "java.lang.Long" -> value.toString().toLong()
+            "java.lang.String" -> value.toString()
+            else -> throw CommandFailException("Invalid value.")
         }
 
-        return Recipient.PLAYER
-    }
+//        println("${convertedValue.javaClass.typeName} != ${default[key]?.defaultValue?.javaClass?.typeName}")
+//        println(convertedValue)
+//        println(convertedValue.javaClass.typeName)
 
-    fun setBossBarVisible(uuid: UUID, value: Recipient) {
-        val file = File("${FiNoteBlockPlugin.instance.dataFolder}\\userdata\\$uuid.dat")
-        if (!file.exists()) file.createNewFile()
-        val dos = DataOutputStream(file.outputStream())
-
-        dos.writeByte(value.ordinal)
-
-        dos.close()
+        if (default[key]?.acceptableValues?.contains(convertedValue) == true)
+            settings[key] = convertedValue
     }
 }
+
+class SettingOption(val offset: Int, val defaultValue: Any, val acceptableValues: List<Any>)

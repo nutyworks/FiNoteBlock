@@ -5,6 +5,7 @@ import com.github.nutyworks.finoteblock.channel.DefaultChannel
 import com.github.nutyworks.finoteblock.command.FiNoteBlockCommand
 import com.github.nutyworks.finoteblock.noteblock.NoteBlockSongManager
 import com.github.nutyworks.finoteblock.noteblock.file.FileManager
+import com.github.nutyworks.finoteblock.noteblock.file.UserSettings
 import org.bukkit.Bukkit
 import org.bukkit.plugin.java.JavaPlugin
 import java.io.File
@@ -36,6 +37,7 @@ class FiNoteBlockPlugin : JavaPlugin() {
 
         Bukkit.getOnlinePlayers().forEach {
             playerManager.moveChannel(it.uniqueId, "default")
+            playerManager.playerSetting[it.uniqueId] = UserSettings(it.uniqueId)
         }
     }
 }
