@@ -63,9 +63,20 @@ class SongRunnable(val song: NoteBlockSong) : BukkitRunnable() {
 
             val finalVolume = (note.volume / 100.0 * (song.layers[note.layer]?.volume ?: 100) / 100.0).toFloat()
 
-            player.playSound(player.location.add(pannedVector), inst, SoundCategory.RECORDS, finalVolume, 2.0.pow((note.key - 45) / 12.0).toFloat())
+            val modifier = when {
+                note.key < 33 -> "_-1"
+                note.key > 57 -> "_1"
+                else -> ""
+            }
+            val pitch: Float = when {
+                note.key < 33 -> 2.0.pow((note.key - 21) / 12.0).toFloat()
+                note.key > 57 -> 2.0.pow((note.key - 69) / 12.0).toFloat()
+                note.key < 9 -> return
+                note.key > 81 -> return
+                else -> 2.0.pow((note.key - 45) / 12.0).toFloat()
+            }
 
-//            println("$inst ${note.key}")
+            player.playSound(player.location.add(pannedVector), inst + modifier, SoundCategory.RECORDS, finalVolume, pitch)
         }
 
     }
