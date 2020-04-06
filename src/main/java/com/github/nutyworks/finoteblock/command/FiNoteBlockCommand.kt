@@ -1,6 +1,7 @@
 package com.github.nutyworks.finoteblock.command
 
 import com.github.nutyworks.finoteblock.FiNoteBlockPlugin
+import com.github.nutyworks.finoteblock.channel.ChannelType
 import com.github.nutyworks.finoteblock.noteblock.file.FileManager
 import com.github.nutyworks.finoteblock.noteblock.file.UserSettings
 import com.github.nutyworks.finoteblock.noteblock.song.NoteBlockSong
@@ -24,6 +25,7 @@ class FiNoteBlockCommand(val plugin: FiNoteBlockPlugin) : AbstractExecutorComple
             put("stop", Stop())
             put("pause", Pause())
             put("resume", Resume())
+            put("channel", Channel())
             put("settings", Settings())
         }
     }
@@ -77,9 +79,9 @@ class FiNoteBlockCommand(val plugin: FiNoteBlockPlugin) : AbstractExecutorComple
                             ?: throw CommandFailException("Could not find ${player?.name}'s channel.")
 
                     // send playing and queued song in player's channel
-                    sender.sendMessage("§aNow playing in §6${channel.name}§a: \n §a${channel.playing?.name ?: "None"}")
+                    sender.sendMessage("§aNow playing in §6${channel.name}§a: \n §a${channel.playing?.name ?: "§7None"}")
                     sender.sendMessage("§aQueued in §6${channel.name}§a: " +
-                            if (channel.queue.reverseElements().hasMoreElements()) "" else "\n None")
+                            if (channel.queue.reverseElements().hasMoreElements()) "" else "\n §7None")
                     channel.queue.reverseElements().toList().forEachIndexed { index, song ->
                         sender.sendMessage(" §6$index. §a${song.name} §7(${song.playId})")
                     }
@@ -122,7 +124,7 @@ class FiNoteBlockCommand(val plugin: FiNoteBlockPlugin) : AbstractExecutorComple
 
             if (args.size == 1) throw CommandFailException("Usage: /$label add <id|name|random>")
 
-            val file = when(args[1]) {
+            val file = when (args[1]) {
                 "id" -> {
                     if (args.size == 3)
                         File("${FiNoteBlockPlugin.instance.dataFolder}\\nbs\\${FileManager.nbsFiles?.get(args[2].toInt())}.nbs")
@@ -228,6 +230,57 @@ class FiNoteBlockCommand(val plugin: FiNoteBlockPlugin) : AbstractExecutorComple
         }
     }
 
+    class Channel : AbstractExecutorCompleter() {
+        override fun command() {
+            if (sender !is Player) throw PlayerOnlyCommandException()
+
+            if (args.size == 1) throw CommandFailException("Usage: /$label channel <create|join|list|settings>")
+
+            when (args[1]) {
+                "create" -> {
+                    if (args.size == 3) {
+                        FiNoteBlockPlugin.instance.channelManager.addChannel(args[2], ChannelType.PUBLIC)
+                        sender.sendMessage("§6Successfully created §a${args[2]} §6channel.")
+                    }
+                    else throw CommandFailException("Usage: /$label channel create <name>")
+                }
+                "join" -> {
+                    if (args.size == 3) {
+                        FiNoteBlockPlugin.instance.playerManager.moveChannel(player!!.uniqueId, args[2])
+                        sender.sendMessage("§6You are moved to §a${args[2]} §6channel.")
+                    }
+                    else throw CommandFailException("Usage: /$label channel join <name>")
+                }
+                "list" -> {
+                    sender.sendMessage("§6Channels:")
+                    FiNoteBlockPlugin.instance.channelManager.channels.forEach {
+                        sender.sendMessage(" §a${it.key}§6 - Currently playing: §a${it.value.playing?.name ?: "§7None"}")
+                    }
+                }
+                "settings" -> {
+                    sender.sendMessage("This command is under development.")
+                }
+                else -> throw CommandFailException("Usage: /$label channel <create|join|list|settings>")
+            }
+        }
+
+
+        override fun tabComplete(): MutableList<String> {
+            return when (args.size) {
+                2 -> setOf("create", "join", "settings", "list").filter { s -> s.startsWith(args[1]) }.toMutableList()
+                3 -> {
+                    if (args[1] == "join") {
+                        FiNoteBlockPlugin.instance.channelManager.channels.keys.filter { k -> k.startsWith(args[2]) }
+                                .toMutableList()
+                    } else {
+                        mutableListOf()
+                    }
+                }
+                else -> mutableListOf()
+            }
+        }
+    }
+
     class Settings : AbstractExecutorCompleter() {
 
         override fun command() {
@@ -252,7 +305,7 @@ class FiNoteBlockCommand(val plugin: FiNoteBlockPlugin) : AbstractExecutorComple
             return when (args.size) {
                 2 -> UserSettings.default.keys.filter { s -> s.startsWith(args[1]) }.toMutableList()
                 3 -> UserSettings.default[args[1]]?.acceptableValues?.primaryToSecondary?.keys?.map { e -> e.toString() }
-                        ?.filter {s -> s.startsWith(args[2])}?.toMutableList() ?: mutableListOf()
+                        ?.filter { s -> s.startsWith(args[2]) }?.toMutableList() ?: mutableListOf()
                 else -> mutableListOf()
             }
         }

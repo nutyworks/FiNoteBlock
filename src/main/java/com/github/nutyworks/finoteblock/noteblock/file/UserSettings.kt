@@ -19,7 +19,6 @@ class UserSettings(val uuid: UUID) {
     // (key, (offset, value))
     companion object {
         val default = HashMap<String, SettingOption>().apply {
-            //
             put("displayBossBar", SettingOption(true, hashBijectiveOf<Any, Any>().apply {
                 set(primary = true, secondary = true)
                 set(primary = false, secondary = false)

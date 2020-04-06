@@ -25,7 +25,7 @@ class PlayerManager : Listener {
 
     fun moveChannel(uuid: UUID, channel: String, force: Boolean = false) {
         val currentChannel = playerChannel[uuid]
-        if (force)
+        if (!force)
             if (currentChannel?.name == channel) throw CommandFailException("Already in $channel channel.")
 
 
