@@ -6,6 +6,7 @@ import com.github.nutyworks.finoteblock.noteblock.file.FileManager
 import com.github.nutyworks.finoteblock.noteblock.file.UserSettings
 import com.github.nutyworks.finoteblock.noteblock.song.NoteBlockSong
 import com.github.nutyworks.finoteblock.noteblock.song.Recipient
+import com.github.nutyworks.finoteblock.util.join
 import org.bukkit.ChatColor
 import org.bukkit.command.Command
 import org.bukkit.command.CommandSender
@@ -105,8 +106,7 @@ class FiNoteBlockCommand(val plugin: FiNoteBlockPlugin) : AbstractExecutorComple
             for (i in realPage * 10..realPage * 10 + 9) {
                 if (files.size <= i)
                     break
-                sender.sendMessage("${ChatColor.GOLD}$i. " +
-                        "${if (files[i].contains(Regex("\\s"))) ChatColor.YELLOW else ChatColor.GREEN}${files[i]}")
+                sender.sendMessage("${ChatColor.GOLD}$i. ${ChatColor.GREEN}${files[i]}")
             }
 
         }
@@ -131,8 +131,9 @@ class FiNoteBlockCommand(val plugin: FiNoteBlockPlugin) : AbstractExecutorComple
                     else throw CommandFailException("Usage: /$label add id [id]")
                 }
                 "name" -> {
-                    if (args.size == 3)
-                        File("${FiNoteBlockPlugin.instance.dataFolder}\\nbs\\${args[2]}.nbs")
+                    if (args.size >= 3) {
+                        File("${FiNoteBlockPlugin.instance.dataFolder}\\nbs\\${args.join(begin = 2)}.nbs")
+                    }
                     else throw CommandFailException("Usage: /$label add name [song]")
                 }
                 "random" -> File("${FiNoteBlockPlugin.instance.dataFolder}\\nbs\\${FileManager.nbsFiles?.random()}.nbs")
@@ -150,19 +151,22 @@ class FiNoteBlockCommand(val plugin: FiNoteBlockPlugin) : AbstractExecutorComple
         }
 
         override fun tabComplete(): MutableList<String> {
-            return when (args.size) {
-                2 -> setOf("id", "name", "random").filter { it.startsWith(args[1]) }.toMutableList()
-                3 -> {
+            return when {
+                args.size == 2 -> setOf("id", "name", "random").filter { it.startsWith(args[1]) }.toMutableList()
+                args.size >= 3 -> {
                     when (args[1]) {
                         "id" -> {
-                            FileManager.nbsFiles?.indices?.toSet()
-                                    ?.filter { i -> i.toString().startsWith(args[2]) }
-                                    ?.map { i -> i.toString() }
-                                    ?.toMutableList() ?: mutableListOf()
+                            if (args.size == 3) {
+                                FileManager.nbsFiles?.indices?.toSet()
+                                        ?.filter { i -> i.toString().startsWith(args[2]) }
+                                        ?.map { i -> i.toString() }
+                                        ?.toMutableList() ?: mutableListOf()
+                            } else mutableListOf()
                         }
                         "name" -> {
                             FileManager.nbsFiles?.toSet()
-                                    ?.filter { !it.contains(Regex("\\s")) && it.startsWith(args[2]) }
+                                    ?.filter { it.startsWith(args.join(begin = 2)) }
+                                    ?.map { it.split(" ").toTypedArray().join(begin = args.size - 3) }
                                     ?.toMutableList() ?: mutableListOf()
                         }
                         else -> mutableListOf()
