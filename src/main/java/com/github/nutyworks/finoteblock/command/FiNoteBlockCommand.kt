@@ -238,7 +238,7 @@ class FiNoteBlockCommand(val plugin: FiNoteBlockPlugin) : AbstractExecutorComple
         override fun command() {
             if (sender !is Player) throw PlayerOnlyCommandException()
 
-            if (args.size == 1) throw CommandFailException("Usage: /$label channel <create|join|list|settings>")
+            if (args.size == 1) throw CommandFailException("Usage: /$label channel <create|join|list|remove|settings>")
 
             when (args[1]) {
                 "create" -> {
@@ -251,7 +251,6 @@ class FiNoteBlockCommand(val plugin: FiNoteBlockPlugin) : AbstractExecutorComple
                 "join" -> {
                     if (args.size == 3) {
                         FiNoteBlockPlugin.instance.playerManager.moveChannel(player!!.uniqueId, args[2])
-                        sender.sendMessage("§6You are moved to §a${args[2]} §6channel.")
                     }
                     else throw CommandFailException("Usage: /$label channel join <name>")
                 }
@@ -260,6 +259,13 @@ class FiNoteBlockCommand(val plugin: FiNoteBlockPlugin) : AbstractExecutorComple
                     FiNoteBlockPlugin.instance.channelManager.channels.forEach {
                         sender.sendMessage(" §a${it.key}§6 - Currently playing: §a${it.value.playing?.name ?: "§7None"}")
                     }
+                }
+                "remove" -> {
+                    if (args.size == 3) {
+                        FiNoteBlockPlugin.instance.channelManager.removeChannel(args[2])
+                        sender.sendMessage("§6Removed §a${args[2]} §6channel.")
+                    }
+                    else throw CommandFailException("Usage: /$label channel remove <name>")
                 }
                 "settings" -> {
                     sender.sendMessage("This command is under development.")
@@ -271,9 +277,9 @@ class FiNoteBlockCommand(val plugin: FiNoteBlockPlugin) : AbstractExecutorComple
 
         override fun tabComplete(): MutableList<String> {
             return when (args.size) {
-                2 -> setOf("create", "join", "settings", "list").filter { s -> s.startsWith(args[1]) }.toMutableList()
+                2 -> setOf("create", "join", "settings", "remove", "list").filter { s -> s.startsWith(args[1]) }.toMutableList()
                 3 -> {
-                    if (args[1] == "join") {
+                    if (args[1] == "join" || args[1] == "remove") {
                         FiNoteBlockPlugin.instance.channelManager.channels.keys.filter { k -> k.startsWith(args[2]) }
                                 .toMutableList()
                     } else {

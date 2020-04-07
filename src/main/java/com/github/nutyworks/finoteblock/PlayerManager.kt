@@ -25,9 +25,8 @@ class PlayerManager : Listener {
 
     fun moveChannel(uuid: UUID, channel: String, force: Boolean = false) {
         val currentChannel = playerChannel[uuid]
-        if (!force)
-            if (currentChannel?.name == channel) throw CommandFailException("Already in $channel channel.")
-
+        if (!force && currentChannel?.name == channel)
+                throw CommandFailException("Already in $channel channel.")
 
         val changeChannel = FiNoteBlockPlugin.instance.channelManager.channels[channel]
                 ?: throw CommandFailException("Could not find channel $channel")
@@ -35,5 +34,9 @@ class PlayerManager : Listener {
         currentChannel?.recipient?.remove(uuid)
         changeChannel.recipient.add(uuid)
         playerChannel[uuid] = changeChannel
+
+        if (!force) {
+            Bukkit.getPlayer(uuid)?.sendMessage("§6You are moved to §a$channel §6channel.")
+        }
     }
 }

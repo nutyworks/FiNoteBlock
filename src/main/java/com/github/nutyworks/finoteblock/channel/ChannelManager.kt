@@ -1,6 +1,9 @@
 package com.github.nutyworks.finoteblock.channel
 
+import com.github.nutyworks.finoteblock.FiNoteBlockPlugin
 import com.github.nutyworks.finoteblock.command.CommandFailException
+import java.util.*
+import kotlin.collections.HashMap
 
 class ChannelManager {
     val channels = HashMap<String, IChannel>()
@@ -18,5 +21,12 @@ class ChannelManager {
         val channel = channels[name] ?: throw CommandFailException("Could not find a channel $name.")
 
         if (channel is DefaultChannel) throw CommandFailException("Cannot delete the default channel.")
+
+        (channel.recipient.clone() as ArrayList<*>).forEach {
+            FiNoteBlockPlugin.instance.playerManager.moveChannel(it as UUID, "default")
+        }
+
+        channel.stop()
+        channels.remove(name)
     }
 }

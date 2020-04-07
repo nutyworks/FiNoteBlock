@@ -36,7 +36,7 @@ class FiNoteBlockPlugin : JavaPlugin() {
         if (!userDataFolder.exists()) userDataFolder.mkdirs()
 
         Bukkit.getOnlinePlayers().forEach {
-            playerManager.moveChannel(it.uniqueId, "default")
+            playerManager.moveChannel(it.uniqueId, "default", true) // will be changed after /nb channel settings
             playerManager.playerSetting[it.uniqueId] = UserSettings(it.uniqueId)
         }
     }

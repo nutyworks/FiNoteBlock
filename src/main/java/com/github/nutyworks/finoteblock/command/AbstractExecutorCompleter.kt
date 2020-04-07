@@ -34,7 +34,7 @@ abstract class AbstractExecutorCompleter : CommandExecutor, TabCompleter {
             sender.sendMessage("${ChatColor.RED}${e.message}")
         } catch (e: Exception) {
             sender.sendMessage("${ChatColor.RED}Error while executing command: ${e.message}")
-            Bukkit.getLogger().severe(e.cause.toString())
+            e.printStackTrace()
         }
 
         return true
