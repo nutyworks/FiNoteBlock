@@ -6,7 +6,6 @@ import com.github.nutyworks.finoteblock.noteblock.instrument.MinecraftInstrument
 import org.bukkit.*
 import org.bukkit.boss.BarColor
 import org.bukkit.boss.BarStyle
-import org.bukkit.boss.BossBar
 import org.bukkit.entity.Player
 import org.bukkit.scheduler.BukkitRunnable
 import org.bukkit.util.Vector
@@ -18,10 +17,16 @@ class SongRunnable(val song: NoteBlockSong) : BukkitRunnable() {
     private var realTick = -4.0
     private var lastTick = -4
     private var forceEndTime = -1L
-    private val bossBar = Bukkit.createBossBar("_", BarColor.GREEN, BarStyle.SEGMENTED_10)
+    private val percentageBossBar = Bukkit.createBossBar("_", BarColor.GREEN, BarStyle.SEGMENTED_10)
+    private val emptyBossBar = Bukkit.createBossBar("_", BarColor.GREEN, BarStyle.SEGMENTED_10)
+    private val timeBossBar = Bukkit.createBossBar("_", BarColor.GREEN, BarStyle.SEGMENTED_10)
+    private var totalPlayTime = (song.songLength / (song.tempo / 100.0)).toInt()
+    private var currentPlayTime = 0
 
     init {
-        bossBar.progress = 0.0
+        percentageBossBar.progress = 0.0
+        emptyBossBar.progress = 0.0
+        timeBossBar.progress = 0.0
     }
 
     override fun run() {
@@ -41,6 +46,7 @@ class SongRunnable(val song: NoteBlockSong) : BukkitRunnable() {
                     }
                 }
             }
+
             forceEndTime = System.currentTimeMillis() + 30000
             updateBossBar()
         } else {
@@ -82,31 +88,74 @@ class SongRunnable(val song: NoteBlockSong) : BukkitRunnable() {
     }
 
     private fun updateBossBar() {
+        totalPlayTime = (song.songLength / (song.tempo / 100.0)).toInt()
+        currentPlayTime = (realTick / (song.tempo / 100.0)).toInt()
         Bukkit.getOnlinePlayers().forEach {
             val isListeningToChannel = song.channel.recipient.contains(it.uniqueId)
             val displayBossBar = FiNoteBlockPlugin.instance.playerManager.playerSetting[it.uniqueId]?.get("displayBossBar") == true
-            if (isListeningToChannel && displayBossBar)
-                bossBar.addPlayer(it)
-            else
-                bossBar.removePlayer(it)
+            val bossBarType = FiNoteBlockPlugin.instance.playerManager.playerSetting[it.uniqueId]?.get("bossBarProgress")
+            if (isListeningToChannel && displayBossBar) {
+                when (bossBarType) {
+                    "percentage" -> {
+                        percentageBossBar.addPlayer(it)
+                        emptyBossBar.removePlayer(it)
+                        timeBossBar.removePlayer(it)
+                    }
+                    "time" -> {
+                        percentageBossBar.removePlayer(it)
+                        emptyBossBar.removePlayer(it)
+                        timeBossBar.addPlayer(it)
+                    }
+                    "hide" -> {
+                        percentageBossBar.removePlayer(it)
+                        emptyBossBar.addPlayer(it)
+                        timeBossBar.removePlayer(it)
+                    }
+                }
+            } else {
+                percentageBossBar.removePlayer(it)
+                emptyBossBar.removePlayer(it)
+                timeBossBar.removePlayer(it)
+            }
         }
 
         val preCheckProgress = (if (lastTick < 0) 0 else lastTick).toDouble() / song.songLength
-        if (preCheckProgress > 1)
-            bossBar.progress = 1.0
-        else
-            bossBar.progress = preCheckProgress
-        bossBar.setTitle("${ChatColor.GREEN}${song.name} - ${(bossBar.progress * 100).roundToInt()}%")
-        bossBar.color = BarColor.GREEN
+        if (preCheckProgress > 1) {
+            percentageBossBar.progress = 1.0
+            emptyBossBar.progress = 1.0
+            timeBossBar.progress = 1.0
+        } else {
+            percentageBossBar.progress = preCheckProgress
+            emptyBossBar.progress = preCheckProgress
+            timeBossBar.progress = preCheckProgress
+        }
+        percentageBossBar.setTitle("${ChatColor.GREEN}${song.name} §7[${(percentageBossBar.progress * 100).roundToInt()}%]")
+        percentageBossBar.color = BarColor.GREEN
+        emptyBossBar.setTitle("${ChatColor.GREEN}${song.name}")
+        emptyBossBar.color = BarColor.GREEN
+        timeBossBar.setTitle("${ChatColor.GREEN}${song.name} §7[${convertToFormattedTime(currentPlayTime)}/${convertToFormattedTime(totalPlayTime)}]")
+        timeBossBar.color = BarColor.GREEN
     }
 
     fun pauseBossBar() {
-        bossBar.color = BarColor.YELLOW
-        bossBar.setTitle("${ChatColor.YELLOW}${song.name} - ${(bossBar.progress * 100).roundToInt()}% [Paused]")
+        percentageBossBar.color = BarColor.YELLOW
+        percentageBossBar.setTitle("${ChatColor.YELLOW}${song.name} [Paused] §7[${(percentageBossBar.progress * 100).roundToInt()}]")
+        emptyBossBar.color = BarColor.YELLOW
+        emptyBossBar.setTitle("${ChatColor.YELLOW}${song.name} [Paused]")
+        timeBossBar.color = BarColor.YELLOW
+        timeBossBar.setTitle("${ChatColor.YELLOW}${song.name} [Paused] §7[${convertToFormattedTime(currentPlayTime)}/${convertToFormattedTime(totalPlayTime)}]")
     }
 
     fun removeBossBar() {
-        bossBar.isVisible = false
-        bossBar.removeAll()
+        percentageBossBar.isVisible = false
+        percentageBossBar.removeAll()
+        emptyBossBar.isVisible = false
+        emptyBossBar.removeAll()
+        timeBossBar.isVisible = false
+        timeBossBar.removeAll()
+    }
+
+    private fun convertToFormattedTime(second: Int): String {
+        return "%d:%02d".format(second / 60, second % 60)
     }
 }

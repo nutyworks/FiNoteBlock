@@ -24,8 +24,9 @@ class UserSettings(val uuid: UUID) {
                 set(primary = false, secondary = false)
             }))
             put("bossBarProgress", SettingOption("percentage", hashBijectiveOf<Any, Any>().apply {
-                set("percentage", true)
-                set("time", false)
+                set("percentage", 0.toByte())
+                set("time", 1.toByte())
+                set("hide", 2.toByte())
             }))
         }
 
@@ -54,16 +55,20 @@ class UserSettings(val uuid: UUID) {
 
         settingIndex.forEach {
             val type = default[it]?.acceptableValues?.secondaryToPrimary?.keys?.first()?.javaClass?.typeName
-            val value = when (type) {
-                "java.lang.Boolean" -> dis.readBoolean()
-                "java.lang.Byte" -> dis.readByte()
-                "java.lang.Short" -> dis.readShort()
-                "java.lang.Integer" -> dis.readInt()
-                "java.lang.Long" -> dis.readLong()
-                "java.lang.String" -> dis.readUTF()
-                else -> default[it]?.defaultValue
-            } as Any
-            settings[it] = default[it]?.acceptableValues?.secondaryToPrimary?.get(value) as Any
+            if (dis.available() > 0) {
+                val value = when (type) {
+                    "java.lang.Boolean" -> dis.readBoolean()
+                    "java.lang.Byte" -> dis.readByte()
+                    "java.lang.Short" -> dis.readShort()
+                    "java.lang.Integer" -> dis.readInt()
+                    "java.lang.Long" -> dis.readLong()
+                    "java.lang.String" -> dis.readUTF()
+                    else -> default[it]?.defaultValue
+                } as Any
+                settings[it] = default[it]?.acceptableValues?.secondaryToPrimary?.get(value) as Any
+            } else {
+                settings[it] = default[it]?.defaultValue as Any
+            }
         }
 
         dis.close()
@@ -76,7 +81,8 @@ class UserSettings(val uuid: UUID) {
         val dos = DataOutputStream(fis)
 
         settingIndex.forEach {
-            when (val value = default[it]?.acceptableValues?.primaryToSecondary?.get(settings[it] ?: default[it]?.defaultValue)) {
+            when (val value = default[it]?.acceptableValues?.primaryToSecondary?.get(settings[it]
+                    ?: default[it]?.defaultValue)) {
                 is Boolean -> dos.writeBoolean(value)
                 is Byte -> dos.writeByte(value.toInt())
                 is Short -> dos.writeShort(value.toInt())
@@ -100,7 +106,7 @@ class UserSettings(val uuid: UUID) {
         if (!default.containsKey(key)) throw CommandFailException("Settings $key not exists.")
 
         val convertedValue = when (default[key]?.defaultValue?.javaClass?.typeName) {
-            "java.lang.Boolean" -> when(value.toString().toLowerCase()) {
+            "java.lang.Boolean" -> when (value.toString().toLowerCase()) {
                 "true" -> true
                 "false" -> false
                 else -> throw CommandFailException("Invalid value.")
