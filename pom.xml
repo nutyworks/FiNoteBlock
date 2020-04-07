@@ -6,10 +6,10 @@
 
     <groupId>com.github.nutyworks</groupId>
     <artifactId>FiNoteblock</artifactId>
-    <version>0.2.1</version>
+    <version>0.2.2</version>
     <packaging>jar</packaging>
 
-    <name>FiNoteblock</name>
+    <name>FiNoteBlock</name>
 
     <description>Play NBS file in minecraft</description>
     <properties>
