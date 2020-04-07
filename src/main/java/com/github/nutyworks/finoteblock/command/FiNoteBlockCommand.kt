@@ -102,7 +102,7 @@ class FiNoteBlockCommand(val plugin: FiNoteBlockPlugin) : AbstractExecutorComple
 
             if (realPage > files.size / 10) throw CommandFailException("No page.")
 
-            sender.sendMessage("----- NBS song (Page: ${realPage + 1}/${files.size / 10 + 1}) -----")
+            sender.sendMessage("§6----- §aNBS song §7(Page: ${realPage + 1}/${files.size / 10 + 1}) §6-----")
             for (i in realPage * 10..realPage * 10 + 9) {
                 if (files.size <= i)
                     break
@@ -126,9 +126,13 @@ class FiNoteBlockCommand(val plugin: FiNoteBlockPlugin) : AbstractExecutorComple
 
             val file = when (args[1]) {
                 "id" -> {
-                    if (args.size == 3)
-                        File("${FiNoteBlockPlugin.instance.dataFolder}\\nbs\\${FileManager.nbsFiles?.get(args[2].toInt())}.nbs")
-                    else throw CommandFailException("Usage: /$label add id [id]")
+                    if (args.size == 3) {
+                        val files = FileManager.nbsFiles
+
+                        if (args[2].toInt() < files?.size ?: 0)
+                            File("${FiNoteBlockPlugin.instance.dataFolder}\\nbs\\${files?.get(args[2].toInt())}.nbs")
+                        else throw CommandFailException("Song ID ${args[2]} not exists.")
+                    } else throw CommandFailException("Usage: /$label add id [id]")
                 }
                 "name" -> {
                     if (args.size >= 3) {
