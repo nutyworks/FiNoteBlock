@@ -45,6 +45,9 @@ class NoteBlockSong(val file: File) {
         if (!file.path.endsWith(".nbs"))
             throw Exception("Illegal file extension; expected .nbs extension.")
 
+        if (file.path.removePrefix(FiNoteBlockPlugin.instance.dataFolder.path + "\\nbs\\").contains(Regex("[\\\\/]")))
+            throw IllegalAccessException("Tried to access out of nbs folder.")
+
         val temp = DataInputStream(file.inputStream())
         // if open version, it always returns 0.
         // if legacy version, it will returns song length.
