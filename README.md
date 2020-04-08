@@ -27,7 +27,6 @@ mvn install
  - Play a random song on the list
 
 **To Do:**
- - Loop
  - GUI
  
 ## Using
