@@ -137,8 +137,7 @@ class FiNoteBlockCommand(val plugin: FiNoteBlockPlugin) : AbstractExecutorComple
                 "name" -> {
                     if (args.size >= 3) {
                         File("${FiNoteBlockPlugin.instance.dataFolder}\\nbs\\${args.join(begin = 2)}.nbs")
-                    }
-                    else throw CommandFailException("Usage: /$label add name [song]")
+                    } else throw CommandFailException("Usage: /$label add name [song]")
                 }
                 "random" -> File("${FiNoteBlockPlugin.instance.dataFolder}\\nbs\\${FileManager.nbsFiles?.random()}.nbs")
                 else -> throw CommandFailException("Usage: /$label add <id|name|random>")
@@ -249,14 +248,12 @@ class FiNoteBlockCommand(val plugin: FiNoteBlockPlugin) : AbstractExecutorComple
                     if (args.size == 3) {
                         FiNoteBlockPlugin.instance.channelManager.addChannel(args[2], ChannelType.PUBLIC)
                         sender.sendMessage("§6Successfully created §a${args[2]} §6channel.")
-                    }
-                    else throw CommandFailException("Usage: /$label channel create <name>")
+                    } else throw CommandFailException("Usage: /$label channel create <name>")
                 }
                 "join" -> {
                     if (args.size == 3) {
                         FiNoteBlockPlugin.instance.playerManager.moveChannel(player!!.uniqueId, args[2])
-                    }
-                    else throw CommandFailException("Usage: /$label channel join <name>")
+                    } else throw CommandFailException("Usage: /$label channel join <name>")
                 }
                 "list" -> {
                     sender.sendMessage("§6Channels:")
@@ -268,11 +265,29 @@ class FiNoteBlockCommand(val plugin: FiNoteBlockPlugin) : AbstractExecutorComple
                     if (args.size == 3) {
                         FiNoteBlockPlugin.instance.channelManager.removeChannel(args[2])
                         sender.sendMessage("§6Removed §a${args[2]} §6channel.")
-                    }
-                    else throw CommandFailException("Usage: /$label channel remove <name>")
+                    } else throw CommandFailException("Usage: /$label channel remove <name>")
                 }
-                "settings" -> {
-                    sender.sendMessage("This command is under development.")
+                "settings" -> { // hard-coded setting, will be changed.
+                    when (args.size) {
+                        4 -> {
+                            if (args[3] == "repeat") {
+                                val channel = FiNoteBlockPlugin.instance.channelManager.channels[args[2]]
+                                if (channel != null) {
+                                    sender.sendMessage("Setting ${args[3]} for channel ${args[2]} is ${channel.repeat}.")
+                                } else throw CommandFailException("Channel ${args[2]} not exists.")
+                            } else throw CommandFailException("Channel setting ${args[3]} not exists.")
+                        }
+                        5 -> {
+                            if (args[4] == "false" || args[4] == "true") {
+                                val channel = FiNoteBlockPlugin.instance.channelManager.channels[args[2]]
+                                if (channel != null) {
+                                    channel.repeat = args[4].toBoolean()
+                                    sender.sendMessage("Setting ${args[3]} for channel ${args[2]} set to ${args[4]}.")
+                                } else throw CommandFailException("Channel ${args[3]} not exists.")
+                            } else throw CommandFailException("${args[4]} is not acceptable. Expected true or false.")
+                        }
+                        else -> throw CommandFailException("Usage: /$label channel settings <name> <setting> [value]")
+                    }
                 }
                 else -> throw CommandFailException("Usage: /$label channel <create|join|list|settings>")
             }
@@ -280,18 +295,23 @@ class FiNoteBlockCommand(val plugin: FiNoteBlockPlugin) : AbstractExecutorComple
 
 
         override fun tabComplete(): MutableList<String> {
-            return when (args.size) {
-                2 -> setOf("create", "join", "settings", "remove", "list").filter { s -> s.startsWith(args[1]) }.toMutableList()
-                3 -> {
-                    if (args[1] == "join" || args[1] == "remove") {
-                        FiNoteBlockPlugin.instance.channelManager.channels.keys.filter { k -> k.startsWith(args[2]) }
-                                .toMutableList()
-                    } else {
-                        mutableListOf()
-                    }
+            if (args.size == 2) {
+                return setOf("create", "join", "settings", "remove", "list").filter { s -> s.startsWith(args[1]) }
+                        .toMutableList()
+            } else if (args.size == 3) {
+                if (args[1] == "join" || args[1] == "remove" || args[1] == "settings") {
+                    return FiNoteBlockPlugin.instance.channelManager.channels.keys.filter { k -> k.startsWith(args[2]) }
+                            .toMutableList()
                 }
-                else -> mutableListOf()
+            } else if (args.size >= 4 && args[1] == "settings") {
+                if (args.size == 4) {
+                    return mutableListOf("repeat").filter { s -> s.startsWith(args[3]) }.toMutableList()
+                } else if (args.size == 5) {
+                    return mutableListOf("true", "false").filter { s -> s.startsWith(args[4]) }.toMutableList()
+                }
             }
+
+            return mutableListOf()
         }
     }
 

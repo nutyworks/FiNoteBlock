@@ -12,12 +12,12 @@ interface IChannel {
     val nbsManager: NoteBlockSongManager
     val channelType: ChannelType
     val permanent: Boolean
+    var repeat: Boolean
 
     var playing: NoteBlockSong?
     fun next(force: Boolean = false)
     fun pause()
     fun resume()
     fun stop()
-
     fun add(song: NoteBlockSong)
 }

@@ -14,8 +14,13 @@ abstract class BaseChannel : IChannel {
     override val channelType = ChannelType.PUBLIC
     override val permanent: Boolean = false
     override var playing: NoteBlockSong? = null
+    override var repeat: Boolean = false
 
     override fun next(force: Boolean /* = false */) {
+
+        if (repeat && playing != null) {
+            playing?.file?.let { file -> add(NoteBlockSong(file)) }
+        }
 
         val hasMore = queue.elements().hasMoreElements()
         if (force || hasMore) {
