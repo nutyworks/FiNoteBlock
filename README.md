@@ -1,4 +1,4 @@
-FiNoteblock
+FiNoteBlock
 =
 This is a Note Block song player for [Paper](https://papermc.io).
 
